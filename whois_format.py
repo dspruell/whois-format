@@ -8,7 +8,8 @@ import logging
 from argparse import ArgumentParser, FileType
 
 import pkg_resources
-from whois import whois
+from tabulate import tabulate
+from whois import whois  # type: ignore
 
 __application_name__ = "whois-format"
 __version__ = pkg_resources.get_distribution(__application_name__).version
@@ -16,16 +17,15 @@ __full_version__ = f"{__application_name__} {__version__}"
 
 logging.basicConfig(level=logging.DEBUG, format="[%(levelname)s] %(message)s")
 
-
 DEFAULT_STR = "-"
 
 
-def get_ns_domains(nameservers):
+def get_ns_domains(nameservers: list) -> list:
     "Return parent domain(s) for list of DNS server FQDNs"
 
     x = set()
     for fqdn in nameservers:
-        dom = ".".join(fqdn.split(".")[1:]).lower()
+        dom: str = ".".join(fqdn.split(".")[1:]).lower()
         x.add(dom)
     return list(x)
 
@@ -47,24 +47,30 @@ def cli():
     )
     args = parser.parse_args()
 
-    # Output format
-    output_tpl = (
-        "{domain}  {creation_date}  {registrar}  {nameservers}  "
-        "{registrant_name}  {email}"
-    )
-
-    fields = {}
+    data = []
 
     w = whois(args.domain.lower())
-    fields["domain"] = w.domain.upper()
-    dt = w.get("creation_date")[0]
-    if isinstance(dt, datetime.datetime):
-        fields["creation_date"] = dt.strftime("%Y-%m-%d")
+
+    # Field ordering matters - keep to this format:
+    # domain, creation_date, registrar, nameservers, registrant name or
+    # organization, registrant email(s)
+
+    data.append(w.domain.upper())
+    creation = w.get("creation_date")
+    if isinstance(creation, list):
+        dt = creation[0]
     else:
-        fields["creation_date"] = DEFAULT_STR
-    fields["registrar"] = w.get("registrar", DEFAULT_STR)
+        dt = creation
+    if isinstance(dt, datetime.datetime):
+        data.append(dt.strftime("%Y-%m-%d"))
+    else:
+        data.append(DEFAULT_STR)
+    data.append(w.get("registrar", DEFAULT_STR))
     ns_list = get_ns_domains(w.get("name_servers", []))
-    fields["nameservers"] = ", ".join(ns_list or ["-"])
-    fields["registrant_name"] = w.get("name") or w.get("org", DEFAULT_STR)
-    fields["email"] = ", ".join(w.get("emails", [DEFAULT_STR]))
-    print(output_tpl.format(**fields))
+    data.append(", ".join(ns_list or ["-"]))
+    data.append(w.get("name") or w.get("org", DEFAULT_STR))
+    emails = w.get("emails", [DEFAULT_STR])
+    if not isinstance(emails, list):
+        emails = [emails]
+    data.append(", ".join(emails))
+    print(tabulate([data], tablefmt="plain"))
