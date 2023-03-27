@@ -1,7 +1,4 @@
-"""
-Whois client wrapper producing terse, single-line format.
-
-"""
+"""Whois client wrapper producing terse, single-line format."""
 
 import datetime
 import logging
@@ -21,8 +18,7 @@ DEFAULT_STR = "-"
 
 
 def get_ns_domains(nameservers: list) -> list:
-    "Return parent domain(s) for list of DNS server FQDNs"
-
+    """Return parent domain(s) for list of DNS server FQDNs."""
     x = set()
     for fqdn in nameservers:
         dom: str = ".".join(fqdn.split(".")[1:]).lower()
@@ -31,6 +27,7 @@ def get_ns_domains(nameservers: list) -> list:
 
 
 def cli():
+    """CLI entry point."""
     description = "Whois client wrapper producing terse, single-line format."
     parser = ArgumentParser(description=description)
     group = parser.add_mutually_exclusive_group(required=True)
