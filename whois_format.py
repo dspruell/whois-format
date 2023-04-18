@@ -14,7 +14,7 @@ __application_name__ = "whois-format"
 __version__ = pkg_resources.get_distribution(__application_name__).version
 __full_version__ = f"{__application_name__} {__version__}"
 
-logging.basicConfig(level=logging.DEBUG, format="[%(levelname)s] %(message)s")
+logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
 
 DEFAULT_STR = "-"
 NUM_SLEEP_SECONDS = 15
@@ -45,10 +45,13 @@ def cli():
     )
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument(
-        "-d", "--domain", nargs="+", help="domain name(s) to query"
+        "domain", nargs="*", default=[], help="domain name(s) to query"
     )
     group.add_argument(
-        "-f", "--in-file", type=FileType("r"), help="input file of domains"
+        "-f",
+        "--in-file",
+        type=FileType("r"),
+        help="input file of domains (`-` for standard input)",
     )
     group.add_argument(
         "-V",
@@ -57,7 +60,13 @@ def cli():
         version=__full_version__,
         help="print package version",
     )
+    parser.add_argument(
+        "-d", "--debug", action="store_true", help="enable debug output"
+    )
     args = parser.parse_args()
+
+    if args.debug:
+        logging.getLogger().setLevel(logging.DEBUG)
 
     resp_data = []
 
@@ -66,9 +75,21 @@ def cli():
     else:
         lookup_domains = args.domain
 
+    val = 0
     for domain in lookup_domains:
+        val += 1
         data = []
-        w = whois(domain.strip().lower())
+        domain = domain.strip().lower()
+        logging.debug("about to query for domain: %s", domain)
+        w = whois(domain)
+        logging.debug("completed query for domain: %s; result: %s", domain, w)
+        if w.domain_name is None:
+            logging.error(
+                "%s: received null response to lookup "
+                "(possible WHOIS library issue)",
+                domain,
+            )
+            continue
 
         # Field ordering matters - keep to this format:
         # domain, creation_date, registrar, nameservers, registrant name or
@@ -94,6 +115,7 @@ def cli():
         data.append(", ".join(emails))
 
         resp_data.append(data)
-        sleep(args.sleep)
+        if val < len(lookup_domains):
+            sleep(args.sleep)
 
     print(tabulate(resp_data, tablefmt="plain"))
