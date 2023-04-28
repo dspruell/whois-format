@@ -5,13 +5,13 @@ import logging
 from argparse import ArgumentParser, FileType
 from time import sleep
 
-import pkg_resources
+from importlib.metadata import version
 from tabulate import tabulate
 from whois import whois  # type: ignore
 
 
 __application_name__ = "whois-format"
-__version__ = pkg_resources.get_distribution(__application_name__).version
+__version__ = version(__application_name__)
 __full_version__ = f"{__application_name__} {__version__}"
 
 logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
