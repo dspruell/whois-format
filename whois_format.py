@@ -110,8 +110,13 @@ def cli():
         data.append(", ".join(ns_list or ["-"]))
         data.append(w.get("name") or w.get("org", DEFAULT_STR))
         emails = w.get("emails", [DEFAULT_STR])
+        logging.debug("emails: %s", emails)
+        if emails is None:
+            emails = [DEFAULT_STR]
+            logging.debug("emails: %s", emails)
         if not isinstance(emails, list):
             emails = [emails]
+            logging.debug("emails: %s", emails)
         data.append(", ".join(emails))
 
         resp_data.append(data)
