@@ -8,7 +8,7 @@ from time import sleep
 
 from tabulate import tabulate
 from whois import whois  # type: ignore
-from whois.parser import PywhoisError
+from whois.parser import PywhoisError  # type: ignore
 
 __application_name__ = "whois-format"
 __version__ = version(__application_name__)
