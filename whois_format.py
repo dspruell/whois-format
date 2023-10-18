@@ -3,12 +3,12 @@
 import datetime
 import logging
 from argparse import ArgumentParser, FileType
+from importlib.metadata import version
 from time import sleep
 
-from importlib.metadata import version
 from tabulate import tabulate
 from whois import whois  # type: ignore
-
+from whois.parser import PywhoisError
 
 __application_name__ = "whois-format"
 __version__ = version(__application_name__)
@@ -76,12 +76,19 @@ def cli():
         lookup_domains = args.domain
 
     val = 0
+    msgs_warning = []
     for domain in lookup_domains:
         val += 1
         data = []
         domain = domain.strip().lower()
         logging.debug("about to query for domain: %s", domain)
-        w = whois(domain)
+        try:
+            w = whois(domain)
+        except PywhoisError as e:
+            err = str(e).partition("\n")[0]
+            msgs_warning.append([domain, err])
+            logging.debug("encountered error for domain %s: %s", domain, err)
+            continue
         logging.debug("completed query for domain: %s; result: %s", domain, w)
         if w.domain_name is None:
             logging.error(
@@ -124,3 +131,6 @@ def cli():
             sleep(args.sleep)
 
     print(tabulate(resp_data, tablefmt="plain"))
+    if msgs_warning:
+        txt_warning = tabulate(msgs_warning, tablefmt="plain")
+        logging.warning("WHOIS errors:\n%s", txt_warning)
