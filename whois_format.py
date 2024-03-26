@@ -14,7 +14,10 @@ __application_name__ = "whois-format"
 __version__ = version(__application_name__)
 __full_version__ = f"{__application_name__} {__version__}"
 
-logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="[%(levelname)s] %(name)s %(message)s"
+)
+logger = logging.getLogger(__name__)
 
 DEFAULT_STR = "-"
 NUM_SLEEP_SECONDS = 15
@@ -60,7 +63,7 @@ def get_domain_whois(domains: list, pause: int = NUM_SLEEP_SECONDS) -> dict:
         val += 1
         data = []
         domain = domain.strip().lower()
-        logging.debug("about to query for domain: %s", domain)
+        logger.debug("about to query for domain: %s", domain)
         try:
             w = whois(domain)
         except PywhoisError as e:
@@ -68,11 +71,11 @@ def get_domain_whois(domains: list, pause: int = NUM_SLEEP_SECONDS) -> dict:
             # caller.
             err = str(e).partition("\n")[0]
             resp_data["warnings"].append([domain, err])
-            logging.debug("encountered error for domain %s: %s", domain, err)
+            logger.warning("encountered error for domain %s: %s", domain, err)
             continue
-        logging.debug("completed query for domain: %s; result: %s", domain, w)
+        logger.debug("completed query for domain: %s; result: %s", domain, w)
         if w.domain_name is None:
-            logging.error(
+            logger.error(
                 "%s: received null response to lookup "
                 "(possible nonexistent domain or WHOIS library issue)",
                 domain,
@@ -101,13 +104,13 @@ def get_domain_whois(domains: list, pause: int = NUM_SLEEP_SECONDS) -> dict:
         # Multiple email addresses may be extracted from the WHOIS record, so
         # attempt to return all of them to maximize context.
         emails = w.get("emails", [DEFAULT_STR])
-        logging.debug("emails: %s", emails)
+        logger.debug("emails: %s", emails)
         if emails is None:
             emails = [DEFAULT_STR]
-            logging.debug("emails: %s", emails)
+            logger.debug("emails: %s", emails)
         if not isinstance(emails, list):
             emails = [emails]
-            logging.debug("emails: %s", emails)
+            logger.debug("emails: %s", emails)
         data.append(", ".join(emails))
 
         resp_data["responses"].append(data)
@@ -167,4 +170,4 @@ def cli():
         print(tabulate(resp_data["responses"], tablefmt="plain"))
     if resp_data["warnings"]:
         txt_warning = tabulate(resp_data["warnings"], tablefmt="plain")
-        logging.warning("WHOIS errors:\n%s", txt_warning)
+        logger.warning("WHOIS errors:\n%s", txt_warning)
