@@ -89,6 +89,7 @@ def get_domain_whois(domains: list, pause: int = NUM_SLEEP_SECONDS) -> dict:
         # organization, registrant email(s)
         data.append(w.domain.upper())
         creation = w.get("creation_date")
+        nameservers = w.get("nameservers")
         if isinstance(creation, list):
             dt = creation[0]
         else:
@@ -98,8 +99,11 @@ def get_domain_whois(domains: list, pause: int = NUM_SLEEP_SECONDS) -> dict:
         else:
             data.append(DEFAULT_STR)
         data.append(w.get("registrar", DEFAULT_STR))
-        ns_list = get_ns_domains(w.get("name_servers", []))
-        data.append(", ".join(ns_list or ["-"]))
+        if nameservers is not None:
+            ns_list = get_ns_domains(nameservers)
+            data.append(", ".join(ns_list))
+        else:
+            data.append("-")
         data.append(w.get("name") or w.get("org", DEFAULT_STR))
         # Multiple email addresses may be extracted from the WHOIS record, so
         # attempt to return all of them to maximize context.
