@@ -8,7 +8,7 @@ from time import sleep
 
 from tabulate import tabulate
 from whois import whois  # type: ignore
-from whois.parser import PywhoisError  # type: ignore
+from whois.exceptions import WhoisError  # type: ignore
 
 __application_name__ = "whois-format"
 __version__ = version(__application_name__)
@@ -66,7 +66,7 @@ def get_domain_whois(domains: list, pause: int = NUM_SLEEP_SECONDS) -> dict:
         logger.debug("about to query for domain: %s", domain)
         try:
             w = whois(domain)
-        except PywhoisError as e:
+        except WhoisError as e:
             # Take the first line of output as the error to pass back to the
             # caller.
             err = str(e).partition("\n")[0]
